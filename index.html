@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Điểm danh - Khóa học 28 ngày - Xây kênh - Tạo dòng tiền</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap&subset=vietnamese');
+        body { font-family: 'Roboto', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .touch-active:active { transform: scale(0.98); }
+    </style>
+</head>
+<body class="bg-[#f6fffb] min-h-screen pb-10">
+
+    <div class="bg-[#cfeff1] pt-4 pb-8 rounded-b-[2.1rem] shadow-[0_18px_45px_rgba(8,145,178,0.18)] text-center relative z-10 overflow-hidden">
+        <div class="absolute -top-14 -right-16 w-56 h-56 bg-white/40 rounded-full blur-2xl"></div>
+        <div class="absolute -bottom-20 -left-24 w-72 h-72 bg-white/35 rounded-full blur-2xl"></div>
+
+        <div class="relative flex flex-col items-center justify-center">
+            <img src="assets/logo.png" onerror="this.src='https://placehold.co/140x60/png?text=Logo'" alt="Logo" class="h-12 w-auto object-contain drop-shadow-[0_10px_22px_rgba(0,0,0,0.28)]">
+
+            <div class="mt-3 flex flex-col items-center gap-2">
+                <span class="text-xl font-black text-slate-900 uppercase tracking-tight leading-none">Điểm danh khóa học 28 ngày</span>
+                <span class="inline-flex items-center justify-center px-3 py-1 rounded-full bg-white/70 border border-cyan-200 text-cyan-800 text-lg font-extrabold uppercase tracking-tight">Xây kênh - Tạo dòng tiền</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-md mx-auto px-4 -mt-6 relative z-20 space-y-2.5">
+
+        <!-- Clock Card -->
+        <div class="bg-white rounded-2xl shadow-xl p-3.5 text-center border border-gray-100">
+            <div id="clock" class="text-4xl font-black text-gray-800 tracking-tighter mb-0.5 font-mono">--:--</div>
+            <div id="date" class="text-gray-500 text-sm font-medium capitalize">...</div>
+        </div>
+
+        <!-- Today Session Info -->
+        <div id="session-container" class="hidden">
+            <div class="rounded-xl p-2 border border-gray-100 shadow-sm flex gap-3 items-center transition-all">
+                <div id="session-badge" class="flex-shrink-0 w-10 h-10 bg-green-100 rounded-lg flex flex-col items-center justify-center text-green-600 font-bold">
+                    <span id="session-badge-label" class="text-[9px] uppercase opacity-80">Buổi</span>
+                    <span id="session-id" class="text-base leading-none">-</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex justify-between items-center mb-0.5">
+                        <span id="session-date" class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">--/--</span>
+                    </div>
+                    <h4 id="session-topic" class="text-base font-bold text-gray-800 line-clamp-2 truncate">...</h4>
+                    <div id="session-status" class="mt-1 text-sm font-bold"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Form -->
+        <div class="space-y-3">
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2 ml-1">Số điện thoại</label>
+                <div class="relative">
+                    <input type="tel" id="phone" placeholder="Nhập số điện thoại của bạn" 
+                        class="w-full pl-11 pr-4 py-3.5 bg-white border border-gray-300 rounded-xl text-lg text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition shadow-sm">
+                    <div class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg">
+                        <i class="fa-solid fa-phone"></i>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="submitAttendance()" id="btn-submit"
+                class="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl shadow-lg touch-active flex items-center justify-center gap-2 text-lg hover:bg-indigo-700 transition">
+                <i class="fa-solid fa-check-to-slot"></i>
+                <span>ĐIỂM DANH NGAY</span>
+            </button>
+
+            <button onclick="checkHistory()" 
+                class="w-full bg-white text-gray-700 font-bold py-3.5 rounded-xl border border-gray-200 touch-active flex items-center justify-center gap-2 hover:bg-gray-50 transition shadow-sm">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span>Lịch sử điểm danh</span>
+            </button>
+        </div>
+
+        <!-- Schedule List -->
+        <div>
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1 ml-1">LỊCH TRÌNH KHÓA HỌC</h3>
+            <div class="space-y-1.5" id="schedule-list">
+                <!-- Generated by JS -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal()"></div>
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden relative z-10 p-6 text-center animate-fade-in">
+            <div id="modal-icon" class="w-16 h-16 rounded-full flex items-center justify-center text-3xl text-white shadow-lg mx-auto mb-4"></div>
+            <h3 id="modal-title" class="text-xl font-bold text-gray-900 mb-2"></h3>
+            <p id="modal-message" class="text-sm text-gray-600 mb-4"></p>
+            <div id="modal-details" class="bg-gray-50 rounded-xl p-3 mb-4 text-left text-xs space-y-1.5 hidden border border-gray-100 text-gray-700"></div>
+            <button onclick="closeModal()" class="w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl">Đóng</button>
+        </div>
+    </div>
+
+    <script>
+        const COURSE = {
+            title: "Khóa học 28 ngày - Xây kênh - Tạo dòng tiền",
+            startDate: "2026-03-19",
+            totalDays: 28,
+            theoryDays: 9,
+            attendanceOpen: "04:45",
+            attendanceClose: "06:00",
+            onTimeEnd: "05:10",
+            classStart: "05:00",
+            classEnd: "06:00"
+        };
+
+        const THEORY_TOPICS = [
+            "Khai giảng",
+            "Cách chọn chủ đề chính để xây kênh phù hợp với từng cá nhân",
+            "Cách viết content thu hút, dễ viral (Phần 1)",
+            "Cách viết content thu hút, dễ viral (Phần 2)",
+            "Ứng dụng AI để viết nội dung mang tính cá nhân hoá",
+            "Ứng dụng AI để tạo ảnh và video viral",
+            "Cách quay dựng 1 video và chèn chữ thu hút",
+            "Lý thuyết + thực hành: CapCut cơ bản để chỉnh sửa video",
+            "Lộ trình chuyển đổi data thành khách hàng"
+        ];
+
+        const PRACTICE_TOPIC = "Thực hành: viết nội dung, chỉnh sửa & đăng kênh (chữa bài mỗi ngày)";
+
+        // --- CONFIGURATION ---
+        // Thay thế URL này bằng Web App URL của bạn sau khi triển khai Google Apps Script
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyD2WJnEiSMgICOgFyw__jn-22BF53VedyPH5dOESulCWTKJ_hS2VPoamtYNHfLOu3qCw/exec'; 
+        // ---------------------
+        let API_URL = SCRIPT_URL;
+        let isSubmitting = false;
+        let lastRenderedDate = "";
+
+        // --- INIT ---
+        function init() {
+            renderSchedule();
+            updateClock();
+            setInterval(updateClock, 1000);
+        }
+        window.onload = init;
+
+        // --- CLOCK & LOGIC ---
+        function updateClock() {
+            const now = new Date();
+            const options = { timeZone: 'Asia/Ho_Chi_Minh', hour12: false };
+            
+            // Clock
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            const s = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('clock').innerText = `${h}:${m}:${s}`;
+            
+            // Date
+            const dateStr = now.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric', year: 'numeric' });
+            document.getElementById('date').innerText = dateStr;
+
+            checkSession(now);
+        }
+
+        function checkSession(now) {
+            const hanoiDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
+            const todayStr = toYMD(hanoiDate);
+            const todayIndex = getDayIndexByDateStr(todayStr);
+
+            if (todayStr !== lastRenderedDate) {
+                renderSchedule(todayStr);
+                lastRenderedDate = todayStr;
+            }
+
+            let session = null;
+            let isToday = false;
+            if (todayIndex >= 1 && todayIndex <= COURSE.totalDays) {
+                session = getSessionByDayIndex(todayIndex);
+                isToday = true;
+            } else if (todayIndex < 1) {
+                session = getSessionByDayIndex(1);
+                isToday = false;
+            }
+            
+            const container = document.getElementById('session-container');
+            const card = container.querySelector('div');
+            const idEl = document.getElementById('session-id');
+            const dateEl = document.getElementById('session-date');
+            const topicEl = document.getElementById('session-topic');
+            const statusEl = document.getElementById('session-status');
+            const badgeLabelEl = document.getElementById('session-badge-label');
+            
+            if (session) {
+                container.classList.remove('hidden');
+                card.className = isToday 
+                    ? 'sched-item ring-2 ring-indigo-500 bg-indigo-50 rounded-xl p-2 border border-gray-100 shadow-sm flex gap-3 items-center transition-all'
+                    : 'sched-item bg-white rounded-xl p-2 border border-gray-100 shadow-sm flex gap-3 items-center transition-all';
+                
+                badgeLabelEl.innerText = session.badgeLabel;
+                idEl.innerText = session.badgeValue;
+                dateEl.innerText = `${formatDate(session.date)} • ${COURSE.classStart}–${COURSE.classEnd}`;
+                topicEl.innerText = session.topic;
+
+                if (isToday) {
+                    const availability = getAttendanceAvailability(hanoiDate, todayIndex);
+                    if (availability.isOpen) {
+                        statusEl.className = 'text-base font-bold text-green-600';
+                        statusEl.innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i> Đang mở điểm danh (${COURSE.attendanceOpen}–${COURSE.attendanceClose})`;
+                    } else {
+                        statusEl.className = availability.type === 'too_early'
+                            ? 'text-base font-bold text-yellow-600'
+                            : 'text-base font-bold text-red-600';
+                        statusEl.innerHTML = availability.type === 'too_early'
+                            ? `<i class="fa-solid fa-hourglass-start mr-1"></i> Chưa đến giờ điểm danh (${COURSE.attendanceOpen})`
+                            : '<i class="fa-solid fa-lock mr-1"></i> Đã đóng điểm danh';
+                    }
+                } else {
+                    const diffDays = Math.ceil((parseYMD(session.date) - parseYMD(todayStr)) / 86400000); 
+                    let timeText = diffDays === 1 ? 'Ngày mai' : `Còn ${diffDays} ngày nữa`;
+                    
+                    statusEl.className = 'text-base font-bold text-indigo-500';
+                    statusEl.innerHTML = `<i class="fa-regular fa-calendar-check mr-1"></i> ${timeText} (Khai giảng 19/03/2026)`;
+                }
+
+                document.querySelectorAll('.sched-item').forEach(el => el.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50'));
+                const activeId = isToday && todayIndex >= 10 ? 'sess-practice' : `sess-${isToday ? todayIndex : 1}`;
+                const el = document.getElementById(activeId);
+                if(el) el.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50');
+
+                if (!isSubmitting) {
+                    const availability = getAttendanceAvailability(hanoiDate, todayIndex);
+                    setSubmitEnabled(availability.isOpen);
+                }
+            } else {
+                container.classList.add('hidden');
+                if (!isSubmitting) setSubmitEnabled(false);
+            }
+        }
+
+        function renderSchedule(todayStr) {
+            const list = document.getElementById('schedule-list');
+            const now = new Date();
+            const resolvedTodayStr = todayStr || toYMD(new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' })));
+            const todayIndex = getDayIndexByDateStr(resolvedTodayStr);
+
+            const colors = [
+                { bg: 'bg-blue-100', text: 'text-blue-600' },
+                { bg: 'bg-green-100', text: 'text-green-600' },
+                { bg: 'bg-purple-100', text: 'text-purple-600' },
+                { bg: 'bg-orange-100', text: 'text-orange-600' },
+                { bg: 'bg-teal-100', text: 'text-teal-600' },
+                { bg: 'bg-rose-100', text: 'text-rose-600' },
+                { bg: 'bg-cyan-100', text: 'text-cyan-600' },
+                { bg: 'bg-amber-100', text: 'text-amber-600' },
+            ];
+
+            const theoryItems = Array.from({ length: COURSE.theoryDays }, (_, idx) => {
+                const dayIndex = idx + 1;
+                const date = addDays(COURSE.startDate, idx);
+                return {
+                    id: dayIndex,
+                    domId: `sess-${dayIndex}`,
+                    badgeLabel: "Buổi",
+                    badgeValue: String(dayIndex),
+                    date,
+                    dateText: formatDate(date),
+                    topic: THEORY_TOPICS[idx]
+                };
+            });
+
+            const practiceStart = addDays(COURSE.startDate, COURSE.theoryDays);
+            const practiceEnd = addDays(COURSE.startDate, COURSE.totalDays - 1);
+            const practiceItem = getPracticeListItem(todayIndex, practiceStart, practiceEnd);
+
+            const items = [...theoryItems, practiceItem];
+
+            list.innerHTML = items.map((s, index) => {
+                const isPast = s.date && s.date < resolvedTodayStr;
+                const isActive = (todayIndex >= 1 && todayIndex <= COURSE.theoryDays && s.id === todayIndex) || (todayIndex >= 10 && todayIndex <= COURSE.totalDays && s.domId === 'sess-practice');
+                const opacity = isPast ? 'opacity-60 grayscale' : '';
+                const activeClass = isActive ? 'ring-2 ring-indigo-500 bg-indigo-50' : 'bg-white';
+                const color = colors[index % colors.length];
+
+                return `
+                    <div id="${s.domId}" class="sched-item ${activeClass} ${opacity} rounded-xl p-2 border border-gray-100 shadow-sm flex gap-3 items-center transition-all">
+                        <div class="flex-shrink-0 w-10 h-10 ${color.bg} rounded-lg flex flex-col items-center justify-center ${color.text} font-bold">
+                            <span class="text-[9px] uppercase opacity-80">${s.badgeLabel}</span>
+                            <span class="text-base leading-none">${s.badgeValue}</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-center mb-0.5">
+                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">${s.dateText}</span>
+                            </div>
+                            <h4 class="text-sm font-bold text-gray-800 line-clamp-1 truncate">${s.topic}</h4>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // --- ACTIONS ---
+        async function submitAttendance() {
+            if (!API_URL) { alert("Chưa cấu hình API URL!"); return; }
+            const phone = document.getElementById('phone').value.trim();
+            if (!phone) { showModal('error', 'Thiếu thông tin', 'Vui lòng nhập số điện thoại.'); return; }
+
+            const now = new Date();
+            const hanoiDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
+            const todayStr = toYMD(hanoiDate);
+            const todayIndex = getDayIndexByDateStr(todayStr);
+            const availability = getAttendanceAvailability(hanoiDate, todayIndex);
+            if (!availability.isOpen) {
+                if (availability.type === 'out_of_course') {
+                    const msg = todayIndex < 1
+                        ? `Chưa tới ngày khai giảng (${formatDate(COURSE.startDate)}). Hệ thống mở điểm danh ${COURSE.attendanceOpen}–${COURSE.attendanceClose}.`
+                        : `Khóa học đã kết thúc.`;
+                    showModal('info', 'Chưa thể điểm danh', msg);
+                    return;
+                }
+                const msg = availability.type === 'too_early'
+                    ? `Chưa đến giờ điểm danh. Hệ thống mở từ ${COURSE.attendanceOpen} đến ${COURSE.attendanceClose}.`
+                    : `Đã hết giờ điểm danh. Hệ thống chỉ mở từ ${COURSE.attendanceOpen} đến ${COURSE.attendanceClose}.`;
+                showModal('info', 'Chưa thể điểm danh', msg);
+                return;
+            }
+
+            setLoading(true);
+            try {
+                const formData = new URLSearchParams();
+                formData.append('action', 'submit_attendance');
+                formData.append('phone', phone);
+
+                const res = await fetch(API_URL, { method: 'POST', body: formData });
+                const text = await res.text();
+                let data = null;
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    showModal('error', 'Lỗi phản hồi', 'Máy chủ trả về dữ liệu không hợp lệ.');
+                    return;
+                }
+
+                if (data.status === 'success') {
+                    const label = data.data && data.data.label ? data.data.label : '';
+                    const topic = data.data && data.data.topic ? data.data.topic : '';
+                    showModal('success', 'Điểm danh thành công!', data.message, `
+                        <div>Học viên: <b>${data.data.name}</b></div>
+                        ${label ? `<div>${label}${topic ? `: <b>${topic}</b>` : ''}</div>` : ''}
+                        <div>Thời gian: ${data.data.time}</div>
+                        <div class="text-green-600 font-bold uppercase mt-1">${data.data.status}</div>
+                    `);
+                } else {
+                    showModal('error', 'Thất bại', data.message);
+                }
+            } catch (e) {
+                showModal('error', 'Lỗi kết nối', 'Không thể kết nối đến máy chủ.');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function checkHistory() {
+            if (!API_URL) { alert("Chưa cấu hình API URL!"); return; }
+            const phone = document.getElementById('phone').value.trim();
+            if (!phone) { showModal('error', 'Thiếu thông tin', 'Vui lòng nhập số điện thoại.'); return; }
+
+            setLoading(true);
+            try {
+                const res = await fetch(`${API_URL}?action=get_history&phone=${encodeURIComponent(phone)}`);
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    const items = [...data.data.history].sort((a, b) => a.session - b.session);
+                    let html = '<div class="space-y-2 mt-2 max-h-60 overflow-y-auto text-left">';
+                    items.forEach(h => {
+                        let color = 'text-gray-400';
+                        if (h.status === 'ĐÚNG GIỜ') color = 'text-green-600';
+                        else if (h.status === 'MUỘN') color = 'text-orange-600';
+                        else if (h.status && h.status.toLowerCase().indexOf('chưa') === -1) color = 'text-indigo-600';
+                        const label = h.label || (h.session <= COURSE.theoryDays ? `Buổi ${h.session}` : `Ngày ${h.session} (Thực hành)`);
+                        const topic = h.topic || (h.session <= COURSE.theoryDays ? THEORY_TOPICS[h.session - 1] : PRACTICE_TOPIC);
+                        html += `
+                            <div class="p-2.5 bg-white rounded-lg border border-gray-100 shadow-sm flex justify-between items-start text-xs">
+                                <div class="flex-1 pr-2">
+                                    <div class="font-bold text-gray-800 mb-0.5">${label}: ${topic}</div>
+                                    <div class="text-[11px] text-gray-400">${formatDate(h.date)}</div>
+                                </div>
+                                <div class="text-right flex flex-col items-end">
+                                    <div class="font-bold ${color} uppercase text-[11px]">${h.status}</div>
+                                    ${h.time ? `<div class="text-[10px] text-gray-500 font-medium mt-0.5">${h.time}</div>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    showModal('info', `Lịch sử: ${data.data.name}`, '', html);
+                } else {
+                    showModal('error', 'Không tìm thấy', data.message);
+                }
+            } catch (e) {
+                showModal('error', 'Lỗi', 'Không thể tải dữ liệu.');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // --- HELPERS ---
+        function formatDate(isoStr) {
+            const [y, m, d] = isoStr.split('-');
+            return `${d}/${m}`;
+        }
+
+        function pad2(n) {
+            return String(n).padStart(2, '0');
+        }
+
+        function toYMD(date) {
+            return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+        }
+
+        function parseYMD(ymd) {
+            const [y, m, d] = ymd.split('-').map(Number);
+            return new Date(y, m - 1, d);
+        }
+
+        function addDays(ymd, days) {
+            const d = parseYMD(ymd);
+            d.setDate(d.getDate() + days);
+            return toYMD(d);
+        }
+
+        function getDayIndexByDateStr(dateStr) {
+            const start = parseYMD(COURSE.startDate);
+            const cur = parseYMD(dateStr);
+            return Math.floor((cur - start) / 86400000) + 1;
+        }
+
+        function getSessionByDayIndex(dayIndex) {
+            if (dayIndex < 1 || dayIndex > COURSE.totalDays) return null;
+            const date = addDays(COURSE.startDate, dayIndex - 1);
+            if (dayIndex <= COURSE.theoryDays) {
+                return {
+                    dayIndex,
+                    date,
+                    label: `Buổi ${dayIndex}`,
+                    badgeLabel: 'Buổi',
+                    badgeValue: String(dayIndex),
+                    topic: THEORY_TOPICS[dayIndex - 1]
+                };
+            }
+            return {
+                dayIndex,
+                date,
+                label: `Ngày ${dayIndex} (Thực hành)`,
+                badgeLabel: 'Ngày',
+                badgeValue: String(dayIndex),
+                topic: PRACTICE_TOPIC
+            };
+        }
+
+        function parseTimeToMin(hhmm) {
+            const [h, m] = hhmm.split(':').map(Number);
+            return h * 60 + m;
+        }
+
+        function getAttendanceAvailability(hanoiDate, todayIndex) {
+            if (todayIndex < 1 || todayIndex > COURSE.totalDays) return { isOpen: false, type: 'out_of_course' };
+            const min = hanoiDate.getHours() * 60 + hanoiDate.getMinutes();
+            const start = parseTimeToMin(COURSE.attendanceOpen);
+            const end = parseTimeToMin(COURSE.attendanceClose);
+            if (min < start) return { isOpen: false, type: 'too_early' };
+            if (min > end) return { isOpen: false, type: 'too_late' };
+            return { isOpen: true, type: 'open' };
+        }
+
+        function getPracticeListItem(todayIndex, practiceStart, practiceEnd) {
+            const isInPractice = todayIndex >= 10 && todayIndex <= COURSE.totalDays;
+            if (isInPractice) {
+                const s = getSessionByDayIndex(todayIndex);
+                return {
+                    id: 'practice',
+                    domId: 'sess-practice',
+                    badgeLabel: s.badgeLabel,
+                    badgeValue: String(s.badgeValue),
+                    date: s.date,
+                    dateText: formatDate(s.date),
+                    topic: PRACTICE_TOPIC
+                };
+            }
+            return {
+                id: 'practice',
+                domId: 'sess-practice',
+                badgeLabel: 'Buổi',
+                badgeValue: '10–28',
+                date: practiceStart,
+                dateText: `${formatDate(practiceStart)}–${formatDate(practiceEnd)}`,
+                topic: PRACTICE_TOPIC
+            };
+        }
+
+        function setLoading(isLoading) {
+            const btn = document.getElementById('btn-submit');
+            if (isLoading) {
+                isSubmitting = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...';
+                btn.disabled = true;
+                btn.classList.add('opacity-75');
+            } else {
+                isSubmitting = false;
+                btn.innerHTML = '<i class="fa-solid fa-check-to-slot"></i> <span>ĐIỂM DANH NGAY</span>';
+                btn.disabled = false;
+                btn.classList.remove('opacity-75');
+            }
+        }
+
+        function setSubmitEnabled(enabled) {
+            const btn = document.getElementById('btn-submit');
+            btn.disabled = false;
+            btn.dataset.canSubmit = enabled ? '1' : '0';
+            if (enabled) btn.classList.remove('opacity-60');
+            else btn.classList.add('opacity-60');
+        }
+
+        function showModal(type, title, msg, html = '') {
+            const m = document.getElementById('modal');
+            const icon = document.getElementById('modal-icon');
+            
+            m.classList.remove('hidden');
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = msg;
+            
+            const det = document.getElementById('modal-details');
+            if (html) {
+                det.innerHTML = html;
+                det.classList.remove('hidden');
+            } else {
+                det.classList.add('hidden');
+            }
+
+            // Icon styling
+            m.className = 'fixed inset-0 z-50 flex items-center justify-center p-4';
+            if (type === 'success') {
+                icon.className = 'w-16 h-16 rounded-full flex items-center justify-center text-3xl text-white shadow-lg mx-auto mb-4 bg-green-500';
+                icon.innerHTML = '<i class="fa-solid fa-check"></i>';
+            } else if (type === 'error') {
+                icon.className = 'w-16 h-16 rounded-full flex items-center justify-center text-3xl text-white shadow-lg mx-auto mb-4 bg-red-500';
+                icon.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+            } else {
+                icon.className = 'w-16 h-16 rounded-full flex items-center justify-center text-3xl text-white shadow-lg mx-auto mb-4 bg-blue-500';
+                icon.innerHTML = '<i class="fa-solid fa-info"></i>';
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
