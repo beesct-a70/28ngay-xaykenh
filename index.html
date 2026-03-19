@@ -109,7 +109,7 @@
             theoryDays: 9,
             attendanceOpen: "04:45",
             attendanceClose: "06:00",
-            onTimeEnd: "05:10",
+            onTimeEnd: "05:15",
             classStart: "05:00",
             classEnd: "06:00"
         };
@@ -135,6 +135,7 @@
         let API_URL = SCRIPT_URL;
         let isSubmitting = false;
         let lastRenderedDate = "";
+        const SESSION_DATES = buildSessionDates();
 
         // --- INIT ---
         function init() {
@@ -165,7 +166,7 @@
         function checkSession(now) {
             const hanoiDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
             const todayStr = toYMD(hanoiDate);
-            const todayIndex = getDayIndexByDateStr(todayStr);
+            const todayIndex = getSessionIndexByDateStr(todayStr);
 
             if (todayStr !== lastRenderedDate) {
                 renderSchedule(todayStr);
@@ -177,9 +178,16 @@
             if (todayIndex >= 1 && todayIndex <= COURSE.totalDays) {
                 session = getSessionByDayIndex(todayIndex);
                 isToday = true;
-            } else if (todayIndex < 1) {
+            } else if (todayStr < COURSE.startDate) {
                 session = getSessionByDayIndex(1);
                 isToday = false;
+            } else if (todayStr <= SESSION_DATES[SESSION_DATES.length - 1]) {
+                const nextIndex = getNextSessionIndexAfter(todayStr);
+                if (nextIndex) {
+                    session = getSessionByDayIndex(nextIndex);
+                    isToday = false;
+                    session.noSessionToday = true;
+                }
             }
             
             const container = document.getElementById('session-container');
@@ -219,17 +227,26 @@
                     let timeText = diffDays === 1 ? 'Ngày mai' : `Còn ${diffDays} ngày nữa`;
                     
                     statusEl.className = 'text-base font-bold text-indigo-500';
-                    statusEl.innerHTML = `<i class="fa-regular fa-calendar-check mr-1"></i> ${timeText} (Khai giảng 19/03/2026)`;
+                    if (session.noSessionToday) {
+                        statusEl.className = 'text-base font-bold text-slate-600';
+                        statusEl.innerHTML = `<i class="fa-regular fa-circle-pause mr-1"></i> Hôm nay nghỉ (Thứ 7/CN) • ${timeText}`;
+                    } else {
+                        statusEl.innerHTML = `<i class="fa-regular fa-calendar-check mr-1"></i> ${timeText} (Khai giảng 19/03/2026)`;
+                    }
                 }
 
                 document.querySelectorAll('.sched-item').forEach(el => el.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50'));
-                const activeId = isToday && todayIndex >= 10 ? 'sess-practice' : `sess-${isToday ? todayIndex : 1}`;
+                const activeId = session.dayIndex >= 10 ? 'sess-practice' : `sess-${session.dayIndex}`;
                 const el = document.getElementById(activeId);
                 if(el) el.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50');
 
                 if (!isSubmitting) {
-                    const availability = getAttendanceAvailability(hanoiDate, todayIndex);
-                    setSubmitEnabled(availability.isOpen);
+                    if (isToday) {
+                        const availability = getAttendanceAvailability(hanoiDate, todayIndex);
+                        setSubmitEnabled(availability.isOpen);
+                    } else {
+                        setSubmitEnabled(false);
+                    }
                 }
             } else {
                 container.classList.add('hidden');
@@ -241,7 +258,7 @@
             const list = document.getElementById('schedule-list');
             const now = new Date();
             const resolvedTodayStr = todayStr || toYMD(new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' })));
-            const todayIndex = getDayIndexByDateStr(resolvedTodayStr);
+            const todayIndex = getSessionIndexByDateStr(resolvedTodayStr) || 0;
 
             const colors = [
                 { bg: 'bg-blue-100', text: 'text-blue-600' },
@@ -256,7 +273,7 @@
 
             const theoryItems = Array.from({ length: COURSE.theoryDays }, (_, idx) => {
                 const dayIndex = idx + 1;
-                const date = addDays(COURSE.startDate, idx);
+                const date = SESSION_DATES[idx];
                 return {
                     id: dayIndex,
                     domId: `sess-${dayIndex}`,
@@ -268,15 +285,15 @@
                 };
             });
 
-            const practiceStart = addDays(COURSE.startDate, COURSE.theoryDays);
-            const practiceEnd = addDays(COURSE.startDate, COURSE.totalDays - 1);
+            const practiceStart = SESSION_DATES[COURSE.theoryDays];
+            const practiceEnd = SESSION_DATES[COURSE.totalDays - 1];
             const practiceItem = getPracticeListItem(todayIndex, practiceStart, practiceEnd);
 
             const items = [...theoryItems, practiceItem];
 
             list.innerHTML = items.map((s, index) => {
                 const isPast = s.date && s.date < resolvedTodayStr;
-                const isActive = (todayIndex >= 1 && todayIndex <= COURSE.theoryDays && s.id === todayIndex) || (todayIndex >= 10 && todayIndex <= COURSE.totalDays && s.domId === 'sess-practice');
+                const isActive = false;
                 const opacity = isPast ? 'opacity-60 grayscale' : '';
                 const activeClass = isActive ? 'ring-2 ring-indigo-500 bg-indigo-50' : 'bg-white';
                 const color = colors[index % colors.length];
@@ -307,7 +324,19 @@
             const now = new Date();
             const hanoiDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
             const todayStr = toYMD(hanoiDate);
-            const todayIndex = getDayIndexByDateStr(todayStr);
+            const todayIndex = getSessionIndexByDateStr(todayStr);
+            if (!todayIndex) {
+                if (todayStr < COURSE.startDate) {
+                    showModal('info', 'Chưa thể điểm danh', `Chưa tới ngày khai giảng (${formatDate(COURSE.startDate)}). Hệ thống mở điểm danh ${COURSE.attendanceOpen}–${COURSE.attendanceClose}.`);
+                    return;
+                }
+                if (todayStr > SESSION_DATES[SESSION_DATES.length - 1]) {
+                    showModal('info', 'Chưa thể điểm danh', 'Khóa học đã kết thúc.');
+                    return;
+                }
+                showModal('info', 'Chưa thể điểm danh', `Hôm nay không có buổi học (Thứ 7/CN). Hệ thống chỉ mở điểm danh vào ngày học từ ${COURSE.attendanceOpen} đến ${COURSE.attendanceClose}.`);
+                return;
+            }
             const availability = getAttendanceAvailability(hanoiDate, todayIndex);
             if (!availability.isOpen) {
                 if (availability.type === 'out_of_course') {
@@ -430,14 +459,13 @@
         }
 
         function getDayIndexByDateStr(dateStr) {
-            const start = parseYMD(COURSE.startDate);
-            const cur = parseYMD(dateStr);
-            return Math.floor((cur - start) / 86400000) + 1;
+            const idx = getSessionIndexByDateStr(dateStr);
+            return idx ? idx : 0;
         }
 
         function getSessionByDayIndex(dayIndex) {
             if (dayIndex < 1 || dayIndex > COURSE.totalDays) return null;
-            const date = addDays(COURSE.startDate, dayIndex - 1);
+            const date = SESSION_DATES[dayIndex - 1];
             if (dayIndex <= COURSE.theoryDays) {
                 return {
                     dayIndex,
@@ -471,6 +499,29 @@
             if (min < start) return { isOpen: false, type: 'too_early' };
             if (min > end) return { isOpen: false, type: 'too_late' };
             return { isOpen: true, type: 'open' };
+        }
+
+        function buildSessionDates() {
+            const dates = [];
+            const d = parseYMD(COURSE.startDate);
+            while (dates.length < COURSE.totalDays) {
+                const day = d.getDay();
+                if (day !== 0 && day !== 6) dates.push(toYMD(d));
+                d.setDate(d.getDate() + 1);
+            }
+            return dates;
+        }
+
+        function getSessionIndexByDateStr(dateStr) {
+            const idx = SESSION_DATES.indexOf(dateStr);
+            return idx === -1 ? null : idx + 1;
+        }
+
+        function getNextSessionIndexAfter(dateStr) {
+            for (let i = 0; i < SESSION_DATES.length; i++) {
+                if (SESSION_DATES[i] > dateStr) return i + 1;
+            }
+            return null;
         }
 
         function getPracticeListItem(todayIndex, practiceStart, practiceEnd) {
